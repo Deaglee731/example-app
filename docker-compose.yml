@@ -3,6 +3,7 @@ version: "3.7"
 
 services:
     app:
+        container_name: app
         build:
             context: ./docker-compose/php-fpm
         volumes:
@@ -15,6 +16,7 @@ services:
 
     db:
         image: mysql:5.7
+        container_name: db
         restart: unless-stopped
         environment:
             MYSQL_DATABASE: ${DB_DATABASE}
@@ -32,6 +34,7 @@ services:
     nginx:
         image: nginx:alpine
         restart: unless-stopped
+        container_name: nginx
         ports:
             - 81:80
         volumes:
@@ -40,13 +43,14 @@ services:
 
     mailhog:
         image: mailhog/mailhog:latest
+        container_name: mailhog
         restart: always
         ports:
-            - 1025:1025
-            - 8025:8025
+            - "1025:1025"
+            - "8025:8025"
 
     rabbitmq:
-        image: rabbitmq:management
+        image: masstransit/rabbitmq
         container_name: rabbitmq
         environment:
             - RABBITMQ_DEFAULT_USER=guest
@@ -54,3 +58,14 @@ services:
         ports:
             - "5672:5672"
             - "15672:15672"
+
+    cache:
+        image: redis:6.2-alpine
+        container_name: redis
+        restart: always
+        ports:
+            - '6379:6379'
+        command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+        volumes:
+            - ./docker-compose/cache:/data
+

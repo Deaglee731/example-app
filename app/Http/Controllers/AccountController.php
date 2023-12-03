@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use AMQPConnection;
 use App\Jobs\ProcessingNumber;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Message\AMQPMessage;
+use App\Service\RabbitMqManager;
 use App\Http\Requests\AccountRequest;
-use VladimirYuldashev\LaravelQueueRabbitMQ\Queue\RabbitMQQueue;
+use App\Service\RandomDataGenerator;
 
 class AccountController extends Controller
 {
-    protected RabbitMQQueue $rabbitMQQueue;
+    protected RabbitMqManager $rabbitMqManager;
 
-    public function __construct(RabbitMQQueue $rabbitMQQueue)
+    protected RandomDataGenerator $randomDataGenerator;
+
+    public function __construct(RabbitMqManager $rabbitMqManager, RandomDataGenerator $randomDataGenerator)
     {
-        $this->rabbitMQQueue = $rabbitMQQueue;
+        $this->rabbitMqManager = $rabbitMqManager;
+        $this->randomDataGenerator = $randomDataGenerator;
     }
 
     /**
@@ -23,14 +24,38 @@ class AccountController extends Controller
      * @return void
      * @throws \Exception
      */
-    public function index(AccountRequest $request): void
+    public function rabbitMq(AccountRequest $request): void
     {
-        $jsonData = $request->json()->all();
+        $data = $this->randomDataGenerator->generateRandomData(10000);
 
-        collect($jsonData)->groupBy('account_id')->map(function ($accounts) {
+        collect($array)->groupBy('account_id')->map(function ($accounts) {
             collect($accounts)->map(function ($account) {
+                //TODO Возможно стоить проверять на наличие пустой очереди и обрабатывать несколько аккаунтов в рамках 1 очереди.
+                // ибо для 10к аккаунтов будет 10к воркеров, что дорого. Возможно фиксится фичами кролика
                dispatch(new ProcessingNumber($account))->onQueue( 'sync-account - ' . $account['account_id']);
                sleep(1);
+            });
+        });
+    }
+
+    /**
+     * @param AccountRequest $request
+     * @return void
+     * @throws \Exception
+     */
+    public function rabbitMq2(AccountRequest $request): void
+    {
+        $data = $this->randomDataGenerator->generateRandomData(10000);
+
+        $exchangeName = 'consistent_hashing_exchange';
+        $this->rabbitMqManager->declareConsistentHashingExchange($exchangeName);
+
+        collect($data)->groupBy('account_id')->map(function ($accounts) use ($exchangeName) {
+            collect($accounts)->map(function ($account) use ($exchangeName) {
+                //Реализация на другом exchange
+                $routingKey = 'sync-account - ' . $account['account_id'];
+                dispatch(new ProcessingNumber($account))->onQueue( $routingKey);
+                sleep(1);
             });
         });
     }
