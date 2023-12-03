@@ -1,0 +1,55 @@
+version: "3.7"
+
+
+services:
+    app:
+        build:
+            context: ./docker-compose/php-fpm
+        volumes:
+            - ~/.ssh:/home/${USER}/.ssh:rw
+            - ./:/var/www
+        depends_on:
+            - db
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+
+    db:
+        image: mysql:5.7
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+            SERVICE_TAGS: dev
+            SERVICE_NAME: mysql
+        volumes:
+            - ./docker-compose/database:/var/lib/mysql
+            - ./var/lib/mysql.
+        ports:
+            - "3307:3306"
+
+    nginx:
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - 81:80
+        volumes:
+            - ./:/var/www
+            - ./docker-compose/nginx:/etc/nginx/conf.d/
+
+    mailhog:
+        image: mailhog/mailhog:latest
+        restart: always
+        ports:
+            - 1025:1025
+            - 8025:8025
+    rabbitmq:
+        image: rabbitmq:management
+        container_name: rabbitmq
+        environment:
+            - RABBITMQ_DEFAULT_USER=guest
+            - RABBITMQ_DEFAULT_PASS=guest
+        ports:
+            - "5672:5672"
+            - "15672:15672"
