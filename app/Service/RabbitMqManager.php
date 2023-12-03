@@ -8,8 +8,8 @@ use PhpAmqpLib\Message\AMQPMessage;
 
 class RabbitMqManager
 {
-    protected $connection;
-    protected $channel;
+    protected AMQPStreamConnection $connection;
+    protected \PhpAmqpLib\Channel\AbstractChannel|\PhpAmqpLib\Channel\AMQPChannel $channel;
 
     public function __construct()
     {
@@ -43,5 +43,10 @@ class RabbitMqManager
     {
         $this->channel->close();
         $this->connection->close();
+    }
+
+    public function hashRoutingKey($routingKey)
+    {
+        return crc32($routingKey);
     }
 }

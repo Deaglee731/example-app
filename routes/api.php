@@ -20,4 +20,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/rabbitmq', [AccountController::class, 'rabbitMq'])->name('rabbitmq');
-Route::post('/rabbitMq2', [AccountController::class, 'rabbitMq2'])->name('rabbitmq2');
+Route::post('/rabbitmq-2', [AccountController::class, 'rabbitMq2'])->name('rabbitmq2');

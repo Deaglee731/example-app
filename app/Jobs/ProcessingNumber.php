@@ -14,7 +14,7 @@ class ProcessingNumber implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected array $account;
+    public array $account;
 
     /**
      * Create a new job instance.
@@ -29,7 +29,13 @@ class ProcessingNumber implements ShouldQueue
      */
     public function handle(): void
     {
+        $start_time = microtime(true);
+
         logger()->info('Processing account' . data_get($this->account, 'account_id') . ' - number - ' . data_get($this->account, 'phone_number'));
         sleep(1);
+
+        $end_time = microtime(true);
+        $execution_time = $end_time - $start_time;
+        logger()->info('Times', [$execution_time]);
     }
 }
